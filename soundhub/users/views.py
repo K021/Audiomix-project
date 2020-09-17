@@ -4,6 +4,7 @@ import requests
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -89,7 +90,11 @@ class UserList(generics.ListAPIView):
     permission_classes = (
         IsAuthenticatedOrReadOnly,
     )
-    filter_backends = (filters.OrderingFilter,)
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter,)
+    filter_fields = (
+        'instrument',
+        'genre',
+    )
     ordering_fields = (
         'total_liked',
         'num_followers',
