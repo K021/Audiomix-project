@@ -37,6 +37,10 @@ class DummyUser:
     # 유저 대량 생산
     @staticmethod
     def create_massive(num):
+        """
+        생성할 유저 수를(num) 입력받아 유저를 생성하고 그 리스트를 반환한다.
+        num=10 이라면, dummy0 ~ dummy9 의 10개를 생성한다.
+        """
         user_list = list()
         for i in range(num):
             user = DummyUser(str(i)).create()

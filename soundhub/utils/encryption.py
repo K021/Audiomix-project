@@ -4,7 +4,7 @@ import base64
 
 def encrypt(key, plain_text):
     """
-    :param key: 36 byte 길이의 문자열. 나중에 암호를 푸는데 사용된다.
+    :param key: 32 byte 길이의 문자열. 나중에 암호를 푸는데 사용된다.
     :param plain_text: 암호화하고 싶은 평문
     :return: 암호화된 byte 타입 데이터
     """
@@ -14,7 +14,7 @@ def encrypt(key, plain_text):
 
 def decrypt(key, encrypted_text):
     """
-    :param key: 암호화에 사용되었던 36 byte 길이의 문자열
+    :param key: 암호화에 사용되었던 32 byte 길이의 문자열
     :param encrypted_text: 암호화된 byte 타입 데이터
     :return: 복호화된 평문
     """

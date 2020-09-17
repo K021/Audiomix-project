@@ -1,6 +1,6 @@
 import hashlib
 
-from random import random
+from random import random, randint
 
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
@@ -12,6 +12,9 @@ from rest_framework.authtoken.models import Token
 
 
 # 회원 가입시 이메일, 닉네임, 악기, 비밀번호를 받도록 하는 커스텀 매니저 설정
+from utils.tasks.staleuser import delete_staleuser
+
+
 class CustomUserManager(BaseUserManager):
     # 유저 생성 공통 메서드
     def _create_user(self, email, nickname, password, is_active=False, is_staff=False, genre=None, instrument=None):
@@ -92,7 +95,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         (USER_TYPE_NAVER, 'Naver'),
     )
 
-    email = models.EmailField( verbose_name='이메일 주소', max_length=255, unique=True,)
+    email = models.EmailField(verbose_name='이메일 주소', max_length=255, unique=True,)
     nickname = models.CharField(max_length=50, unique=True)
     # 프로필 이미지
     profile_img = models.ImageField(blank=True, upload_to=profile_image_directory_path)
@@ -129,11 +132,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # 이메일을 유저네임으로 설정
     USERNAME_FIELD = 'email'
-
-    # 필수 정보 설정
-    REQUIRED_FIELDS = (
-        'nickname',
-    )
 
     # 커스텀 유저 매니저를 사용하도록 설정
     objects = CustomUserManager()
@@ -183,10 +181,11 @@ class ActivationKeyInfoManager(models.Manager):
         :param user: ActivationKeyInfo 와 연결될 유저 객체
         :return: 생성된 ActivationKeyInfo 객체
         """
-        # stale user 삭제
-        for aki in ActivationKeyInfo.objects.all():
-            if aki.user.is_active is False and aki.expires_at < timezone.now():
-                aki.delete()
+        # A.K.I manager 를 생성할 때마다 stale user 를 삭제하는 것은 매우 비효율적이다.
+        # 5%의 확률도 삭제한다.
+        if randint(1, 20) == 1:
+            # stale user 삭제 비동기 처리
+            delete_staleuser.delay()
 
         # activation key 생성을 위한 무작위 문자열
         # user 마다 unique 한 값을 가지게 하기 위해 user.email 첨가
@@ -233,6 +232,11 @@ class ActivationKeyInfo(models.Model):
         expires_at = timezone.now() + timezone.timedelta(days=2)
 
         self.key = activation_key
+        self.expires_at = expires_at
+        self.save()
+
+    def refresh_expires_at(self):
+        expires_at = timezone.now() + timezone.timedelta(days=2)
         self.expires_at = expires_at
         self.save()
 

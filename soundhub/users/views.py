@@ -3,7 +3,6 @@ from typing import NamedTuple
 import requests
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
-from django.urls import reverse
 from django.utils import timezone
 
 from google.oauth2 import id_token
@@ -239,6 +238,8 @@ class Signup(APIView):
             elif user.is_active is True:
                 raise RequestDataInvalid('이미 존재하는 유저입니다')
             elif user.is_active is False:
+                # Activation key 만료 기한 재설정
+                user.activationkeyinfo.refresh_expires_at()
                 send_confirm_readmission_mail.delay([user.email])
                 raise RequestDataInvalid('이메일 인증 중인 유저입니다. 메일을 확인해주세요.')
 
